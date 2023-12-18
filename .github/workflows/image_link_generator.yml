@@ -7,7 +7,7 @@ on:
 jobs:
   process-image-url:
     runs-on: ubuntu-latest
-    if: contains(github.event.comment.body, 'https://github.com/github/release-assets/assets/')
+    if: contains(github.event.comment.body, 'https://github.com/github/releases_dev/assets/')
     steps:
       - name: Checkout
         uses: actions/checkout@v2
@@ -15,7 +15,7 @@ jobs:
       - name: Extract and Clean Initial URL
         id: extract-url
         run: |
-          INITIAL_URL=$(echo "${{ github.event.comment.body }}" | grep -o 'https://github.com/github/release-assets/assets/[^ >]*')
+          INITIAL_URL=$(echo "${{ github.event.comment.body }}" | grep -o 'https://github.com/github/releases_dev/assets/[^ >]*')
           echo "Cleaned Initial URL: $INITIAL_URL"
           echo "::set-output name=initial_url::$INITIAL_URL"
 
@@ -27,6 +27,27 @@ jobs:
           echo "Redirected URL: $REDIRECTED_URL"
           echo "::set-output name=redirected_url::$REDIRECTED_URL"
 
-      - name: Output Final Redirected URL
+      - name: Trim URL after PNG
+        id: trim-url
         run: |
-          echo "Final Redirected Image URL: ${{ steps.curl.outputs.redirected_url }}"
+          TRIMMED_URL=$(echo "${{ steps.curl.outputs.redirected_url }}" | sed 's/\(.*\.png\).*/\1/')
+          echo "Trimmed URL: $TRIMMED_URL"
+          echo "::set-output name=trimmed_url::$TRIMMED_URL"
+
+      - name: Output Final Trimmed URL
+        run: |
+          echo "Final Trimmed Image URL: ${{ steps.trim-url.outputs.trimmed_url }}"
+
+      - name: Update Comment with New URL
+        run: |
+          COMMENT_URL="${{ github.event.comment.url }}"
+          NEW_COMMENT_BODY="Use this link to include this asset in your changelog: ${{ steps.trim-url.outputs.trimmed_url }}"
+          UPDATED_COMMENT=$(echo -e "${{ github.event.comment.body }}\n\n$NEW_COMMENT_BODY")
+          
+          curl -X PATCH \
+               -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+               -H "Accept: application/vnd.github.v3+json" \
+               "${COMMENT_URL}" \
+               -d "{\"body\":\"$UPDATED_COMMENT\"}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
