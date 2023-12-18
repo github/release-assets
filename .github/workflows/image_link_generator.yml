@@ -1,0 +1,32 @@
+name: Image URL Processing
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  process-image-url:
+    runs-on: ubuntu-latest
+    if: contains(github.event.comment.body, 'https://github.com/github/release-assets/assets/')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Extract and Clean Initial URL
+        id: extract-url
+        run: |
+          INITIAL_URL=$(echo "${{ github.event.comment.body }}" | grep -o 'https://github.com/github/release-assets/assets/[^ >]*')
+          echo "Cleaned Initial URL: $INITIAL_URL"
+          echo "::set-output name=initial_url::$INITIAL_URL"
+
+      - name: Get Redirected URL with Debugging
+        id: curl
+        run: |
+          REDIRECTED_URL=$(curl -L -o /dev/null -w %{url_effective} -sS "${{ steps.extract-url.outputs.initial_url }}")
+          echo "Curl Command Executed"
+          echo "Redirected URL: $REDIRECTED_URL"
+          echo "::set-output name=redirected_url::$REDIRECTED_URL"
+
+      - name: Output Final Redirected URL
+        run: |
+          echo "Final Redirected Image URL: ${{ steps.curl.outputs.redirected_url }}"
