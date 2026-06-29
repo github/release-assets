@@ -33,5 +33,5 @@ To add the secret: **Repository Settings → Secrets and variables → Actions �
 | Match in body | `Performance issue` | `Need copilot assistance` | Slack notification sent |
 | Case-insensitive match | `COPILOT integration` | *(any)* | Slack notification sent |
 | No match | `Release checklist` | `Deploy new version` | No notification (silent skip) |
-| Partial word — no match | `github-copilots` | *(empty)* | No notification (whole-word only) |
+| Partial word — no match | `github-copilot` | *(empty)* | No notification (whole-word only) |
 | Empty body | `Copilot question` | *(empty/null)* | Slack notification sent (title matched) |
